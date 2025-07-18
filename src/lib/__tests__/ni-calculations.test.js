@@ -6,6 +6,7 @@ import {
     calcAnnualNIC,
     calcDirectorAlternativeNIC,
     calcDirectorStandardNIC,
+    calcDirectorStandardNICRates,
     cumulative,
 } from '../ni-calculations.js';
 
@@ -165,6 +166,74 @@ describe('calcDirectorStandardNIC', () => {
         // PT should be prorated for remaining months
         expect(result).toHaveLength(12);
         // First few months should still be 0 as cumulative pay hasn't exceeded prorated PT
+    });
+});
+
+describe('calcDirectorStandardNICRates', () => {
+    test('should return array of correct length', () => {
+        const result = calcDirectorStandardNICRates(30000, 'monthly');
+        expect(result).toHaveLength(12);
+    });
+
+    test('should show 0% rate when cumulative pay below PT', () => {
+        const result = calcDirectorStandardNICRates(10000, 'monthly');
+        // First few months should be 0% as cumulative pay is below PT
+        expect(result[0].rates).toEqual([{ rate: 0, description: "0% (below PT)" }]);
+        expect(result[0].cumulativePay).toBe(10000 / 12); // £833.33
+    });
+
+    test('should show 12% rate when cumulative pay between PT and UEL', () => {
+        const result = calcDirectorStandardNICRates(30000, 'monthly');
+        const monthlyPay = 30000 / 12; // £2,500
+
+        // Month 5: cumulative = £12,500 (still below PT)
+        // Month 6: cumulative = £15,000 (above PT, below UEL)
+        expect(result[5].rates).toEqual([{ rate: 12, description: "12% (PT to UEL)" }]);
+        expect(result[5].cumulativePay).toBe(monthlyPay * 6);
+    });
+
+    test('should show both 12% and 2% rates when cumulative pay above UEL', () => {
+        const result = calcDirectorStandardNICRates(250000, 'monthly');
+        const monthlyPay = 250000 / 12; // £20,833.33
+
+        // Month 3: cumulative = £62,500 (above UEL)
+        expect(result[2].rates).toContainEqual({ rate: 12, description: "12% (PT to UEL)" });
+        expect(result[2].rates).toContainEqual({ rate: 2, description: "2% (above UEL)" });
+        expect(result[2].cumulativePay).toBe(monthlyPay * 3);
+    });
+
+    test('should handle transition from 0% to 12% correctly', () => {
+        const result = calcDirectorStandardNICRates(15000, 'monthly');
+        const monthlyPay = 15000 / 12; // £1,250
+
+        // Month 10: cumulative = £12,500 (still below PT)
+        expect(result[9].rates).toEqual([{ rate: 0, description: "0% (below PT)" }]);
+
+        // Month 11: cumulative = £13,750 (above PT)
+        expect(result[10].rates).toEqual([{ rate: 12, description: "12% (PT to UEL)" }]);
+    });
+
+    test('should handle transition from 12% to 2% correctly', () => {
+        const result = calcDirectorStandardNICRates(100000, 'monthly');
+        const monthlyPay = 100000 / 12; // £8,333.33
+
+        // Month 6: cumulative = £50,000 (exactly at UEL)
+        expect(result[5].rates).toEqual([{ rate: 12, description: "12% (PT to UEL)" }]);
+
+        // Month 7: cumulative = £58,333.33 (above UEL)
+        expect(result[6].rates).toContainEqual({ rate: 12, description: "12% (PT to UEL)" });
+        expect(result[6].rates).toContainEqual({ rate: 2, description: "2% (above UEL)" });
+    });
+
+    test('should handle weekly frequency correctly', () => {
+        const result = calcDirectorStandardNICRates(30000, 'weekly');
+        expect(result).toHaveLength(52);
+
+        // Week 10: cumulative = £5,769.23 (below PT)
+        expect(result[9].rates).toEqual([{ rate: 0, description: "0% (below PT)" }]);
+
+        // Week 22: cumulative = £12,692.31 (above PT)
+        expect(result[21].rates).toEqual([{ rate: 12, description: "12% (PT to UEL)" }]);
     });
 });
 

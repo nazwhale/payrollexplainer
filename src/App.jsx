@@ -18,6 +18,7 @@ import {
   calcEmployeeNIC,
   calcDirectorAlternativeNIC,
   calcDirectorStandardNIC,
+  calcDirectorStandardNICRates,
   cumulative,
 } from "@/lib/ni-calculations";
 
@@ -32,12 +33,17 @@ ChartJS.register(
   Legend
 );
 
-const fmtGBP = (n) =>
-  new Intl.NumberFormat("en-GB", {
+const fmtGBP = (n) => {
+  const formatted = new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(n);
+
+  // Remove .00 if it's always .00 (whole numbers)
+  return formatted.replace(/\.00$/, '');
+};
 
 export default function DirectorsNIApp() {
   const [salary, setSalary] = useState(60_000);
@@ -53,12 +59,18 @@ export default function DirectorsNIApp() {
   // Add copy feedback state
   const [copyFeedback, setCopyFeedback] = useState(false);
 
+  // Add state for standard method rate information
+  const [standardRates, setStandardRates] = useState([]);
+
   // Recalculate datasets whenever inputs change
   useEffect(() => {
     setIsLoading(true);
     const emp = calcEmployeeNIC(salary, frequency);
     const alt = calcDirectorAlternativeNIC(salary, frequency);
     const std = calcDirectorStandardNIC(salary, frequency, startDate);
+    const rates = calcDirectorStandardNICRates(salary, frequency, startDate);
+
+    setStandardRates(rates);
 
     const labels = emp.map((_, i) =>
       frequency === "monthly" ? `M${i + 1}` : `W${i + 1}`
@@ -232,7 +244,17 @@ export default function DirectorsNIApp() {
                         borderWidth: 1,
                         callbacks: {
                           label: function (context) {
-                            return `${context.dataset.label}: ${fmtGBP(context.parsed.y)}`;
+                            const labels = [`${context.dataset.label}: ${fmtGBP(context.parsed.y)}`];
+
+                            // Add rate information for Standard (annual) method
+                            if (context.dataset.label === "Standard (annual)" && standardRates[context.dataIndex]) {
+                              const rateInfo = standardRates[context.dataIndex];
+                              const rateDescriptions = rateInfo.rates.map(r => r.description).join(", ");
+                              labels.push(`Rates: ${rateDescriptions}`);
+                              labels.push(`Cumulative pay: ${fmtGBP(rateInfo.cumulativePay)}`);
+                            }
+
+                            return labels;
                           }
                         }
                       }
@@ -295,7 +317,17 @@ export default function DirectorsNIApp() {
                         borderWidth: 1,
                         callbacks: {
                           label: function (context) {
-                            return `${context.dataset.label}: ${fmtGBP(context.parsed.y)}`;
+                            const labels = [`${context.dataset.label}: ${fmtGBP(context.parsed.y)}`];
+
+                            // Add rate information for Standard (annual) method
+                            if (context.dataset.label === "Standard (annual)" && standardRates[context.dataIndex]) {
+                              const rateInfo = standardRates[context.dataIndex];
+                              const rateDescriptions = rateInfo.rates.map(r => r.description).join(", ");
+                              labels.push(`Rates: ${rateDescriptions}`);
+                              labels.push(`Cumulative pay: ${fmtGBP(rateInfo.cumulativePay)}`);
+                            }
+
+                            return labels;
                           }
                         }
                       }
@@ -341,13 +373,13 @@ export default function DirectorsNIApp() {
               <h3 className="text-lg font-semibold">The "Bucket vs Drip-feed" Analogy</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <h4 className="font-medium text-blue-600">Standard (Annual) Method</h4>
+                  <h4 className="font-medium text-blue-600">🪣 Standard (Annual) Method</h4>
                   <p className="text-sm text-muted-foreground">
                     Like a bucket: ignore weekly/monthly thresholds until cumulative pay spills over £12,570, then a sudden NI hit.
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-green-600">Alternative Method</h4>
+                  <h4 className="font-medium text-green-600">💧 Alternative Method</h4>
                   <p className="text-sm text-muted-foreground">
                     Like drip-feed: treat each pay run like an ordinary employee, with a tiny true-up at year-end.
                   </p>

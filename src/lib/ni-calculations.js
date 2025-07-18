@@ -78,6 +78,58 @@ export const calcDirectorStandardNIC = (annualSalary, freq, startDateStr) => {
     return per;
 };
 
+/**
+ * Calculate which NI rates are being applied for each period in the standard method
+ * Returns an array of objects with rate information for each period
+ */
+export const calcDirectorStandardNICRates = (annualSalary, freq, startDateStr) => {
+    const { periods } = perPeriodThresholds(freq);
+    const pay = annualSalary / periods;
+    let proratedPT = PT_ANNUAL;
+
+    // Handle mid‑year appointments – pro‑rate PT
+    if (startDateStr) {
+        const start = new Date(startDateStr);
+        if (start > TAX_YEAR_START) {
+            const remainingDays = (TAX_YEAR_END - start) / 86_400_000 + 1;
+            proratedPT = PT_ANNUAL * (remainingDays / 365);
+        }
+    }
+
+    const rates = [];
+    let cumPay = 0;
+
+    for (let i = 0; i < periods; i++) {
+        cumPay += pay;
+
+        let rateInfo = {
+            period: i + 1,
+            cumulativePay: cumPay,
+            rates: []
+        };
+
+        if (cumPay <= proratedPT) {
+            rateInfo.rates.push({ rate: 0, description: "0% (below PT)" });
+        } else if (cumPay <= UEL_ANNUAL) {
+            rateInfo.rates.push({ rate: 12, description: "12% (PT to UEL)" });
+        } else {
+            // Above UEL - need to calculate how much at each rate
+            const ptToUel = UEL_ANNUAL - proratedPT;
+            const aboveUel = cumPay - UEL_ANNUAL;
+
+            if (ptToUel > 0) {
+                rateInfo.rates.push({ rate: 12, description: "12% (PT to UEL)" });
+            }
+            if (aboveUel > 0) {
+                rateInfo.rates.push({ rate: 2, description: "2% (above UEL)" });
+            }
+        }
+
+        rates.push(rateInfo);
+    }
+    return rates;
+};
+
 export const cumulative = (arr) => {
     const out = [];
     arr.reduce((acc, v) => {
