@@ -1,5 +1,6 @@
 {
-  "name": "payrollexplainer",
+  "name": "uk-payroll-explainer",
+  "description": "Interactive UK payroll calculator for Directors' National Insurance - comparing bucket vs drip-feed methods",
   "private": true,
   "version": "0.0.0",
   "type": "module",

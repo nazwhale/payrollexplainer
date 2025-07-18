@@ -216,7 +216,7 @@ export default function DirectorsNIApp() {
         animate={{ opacity: 1, y: 0 }}
         className="text-4xl font-bold tracking-tight text-center"
       >
-        Directors' National Insurance: <span className="font-normal text-muted-foreground">bucket vs drip‑feed</span>
+        UK Payroll Explainer: <span className="font-normal text-muted-foreground">Directors' National Insurance - bucket vs drip‑feed</span>
       </motion.h1>
 
       {/* Controls */}
