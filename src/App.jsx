@@ -13,8 +13,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Check, Copy } from "lucide-react";
+import {
+  calcEmployeeNIC,
+  calcDirectorAlternativeNIC,
+  calcDirectorStandardNIC,
+  cumulative,
+} from "@/lib/ni-calculations";
 
-// Explicitly register only the pieces we need – fixes the “linear is not a registered scale” error
+// Explicitly register only the pieces we need – fixes the "linear is not a registered scale" error
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -25,14 +32,6 @@ ChartJS.register(
   Legend
 );
 
-/**
- * 2025/26 NIC thresholds
- */
-const PT_ANNUAL = 12_570;
-const UEL_ANNUAL = 50_270;
-const TAX_YEAR_START = new Date("2025-04-06");
-const TAX_YEAR_END = new Date("2026-04-05");
-
 const fmtGBP = (n) =>
   new Intl.NumberFormat("en-GB", {
     style: "currency",
@@ -40,98 +39,19 @@ const fmtGBP = (n) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-const perPeriodThresholds = (freq) => {
-  const periods = freq === "monthly" ? 12 : 52;
-  return {
-    PT: PT_ANNUAL / periods,
-    UEL: UEL_ANNUAL / periods,
-    periods,
-  };
-};
-
-const calcEmployeeNIC = (annualSalary, freq) => {
-  const { PT, UEL, periods } = perPeriodThresholds(freq);
-  const pay = annualSalary / periods;
-  return Array.from({ length: periods }, () => {
-    let ni = 0;
-    if (pay > PT) {
-      const abovePT = Math.min(pay, UEL) - PT;
-      ni += abovePT * 0.12;
-      if (pay > UEL) ni += (pay - UEL) * 0.02;
-    }
-    return ni;
-  });
-};
-
-const calcAnnualNIC = (annualSalary) => {
-  let ni = 0;
-  if (annualSalary > PT_ANNUAL) {
-    const abovePT = Math.min(annualSalary, UEL_ANNUAL) - PT_ANNUAL;
-    ni += abovePT * 0.12;
-    if (annualSalary > UEL_ANNUAL) ni += (annualSalary - UEL_ANNUAL) * 0.02;
-  }
-  return ni;
-};
-
-const calcDirectorAlternativeNIC = (annualSalary, freq) => {
-  const per = calcEmployeeNIC(annualSalary, freq);
-  const trueUp = calcAnnualNIC(annualSalary) - per.reduce((a, b) => a + b, 0);
-  per[per.length - 1] += trueUp; // balancing charge in final period
-  return per;
-};
-
-const calcDirectorStandardNIC = (annualSalary, freq, startDateStr) => {
-  const { periods } = perPeriodThresholds(freq);
-  const pay = annualSalary / periods;
-  let proratedPT = PT_ANNUAL;
-
-  // Handle mid‑year appointments – pro‑rate PT
-  if (startDateStr) {
-    const start = new Date(startDateStr);
-    if (start > TAX_YEAR_START) {
-      const remainingDays = (TAX_YEAR_END - start) / 86_400_000 + 1;
-      proratedPT = PT_ANNUAL * (remainingDays / 365);
-    }
-  }
-
-  const per = [];
-  let cumPay = 0,
-    cumNI = 0;
-
-  for (let i = 0; i < periods; i++) {
-    cumPay += pay;
-    let niToDate = 0;
-    if (cumPay > proratedPT) {
-      const abovePT = Math.min(cumPay, UEL_ANNUAL) - proratedPT;
-      niToDate += abovePT * 0.12;
-      if (cumPay > UEL_ANNUAL) niToDate += (cumPay - UEL_ANNUAL) * 0.02;
-    }
-    per.push(niToDate - cumNI);
-    cumNI = niToDate;
-  }
-  return per;
-};
-
-const cumulative = (arr) => {
-  const out = [];
-  arr.reduce((acc, v) => {
-    const next = acc + v;
-    out.push(next);
-    return next;
-  }, 0);
-  return out;
-};
-
 export default function DirectorsNIApp() {
   const [salary, setSalary] = useState(60_000);
   const [frequency, setFrequency] = useState("monthly");
-  const [startDate, setStartDate] = useState("");
+  const [startDate, setStartDate] = useState("2025-04-01");
 
   const [barData, setBarData] = useState(null);
   const [lineData, setLineData] = useState(null);
 
   // Add loading state for charts
   const [isLoading, setIsLoading] = useState(true);
+
+  // Add copy feedback state
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   // Recalculate datasets whenever inputs change
   useEffect(() => {
@@ -204,9 +124,16 @@ export default function DirectorsNIApp() {
     setIsLoading(false);
   }, [salary, frequency, startDate]);
 
-  const copyExplanation = () => {
-    const txt = `Two NI calculation styles for directors:\n\n• Standard (\"bucket\"): nothing until cumulative pay passes £12,570, then a spike.\n• Alternative (\"drip\"): NI calculated each pay run like a normal employee, with a tiny true‑up in the final period.\n\nTotal NI over the tax year is identical – only timing differs.`;
-    navigator.clipboard.writeText(txt);
+  const copyExplanation = async () => {
+    const txt = `Two NI calculation styles for directors:\n\n• Standard ("bucket"): nothing until cumulative pay passes £12,570, then a spike.\n• Alternative ("drip"): NI calculated each pay run like a normal employee, with a tiny true‑up in the final period.\n\nTotal NI over the tax year is identical – only timing differs.`;
+
+    try {
+      await navigator.clipboard.writeText(txt);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   return (
@@ -434,7 +361,15 @@ export default function DirectorsNIApp() {
               </div>
             </div>
             <Button onClick={copyExplanation} variant="outline" size="sm">
-              Copy explanation
+              {copyFeedback ? (
+                <>
+                  <Check className="mr-2 h-4 w-4" /> Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" /> Copy explanation
+                </>
+              )}
             </Button>
           </div>
         </CardContent>

@@ -1,0 +1,43 @@
+# Cursor Rules for UK Payroll Explainer
+
+## Testing Rules
+
+### Run Tests After Calculation Logic Changes
+When modifying NI calculation logic in `src/lib/ni-calculations.js`, automatically run the test suite to ensure calculations remain accurate.
+
+**Trigger**: Changes to `src/lib/ni-calculations.js`
+**Action**: Run `npm test` to execute the full test suite
+**Rationale**: NI calculations are critical business logic that must be validated after any changes
+
+### Test Coverage for New Features
+When adding new NI calculation methods or thresholds, ensure comprehensive test coverage is added to `src/lib/__tests__/ni-calculations.test.js`.
+
+**Trigger**: New functions in `src/lib/ni-calculations.js`
+**Action**: Prompt to add corresponding tests
+**Rationale**: Maintain high test coverage for financial calculations
+
+## Code Quality Rules
+
+### ES Modules Consistency
+Maintain ES module syntax throughout the codebase:
+- Use `import`/`export` statements
+- Avoid `require()`/`module.exports`
+- Keep `"type": "module"` in package.json
+
+### Calculation Precision
+When working with financial calculations:
+- Use appropriate decimal precision for currency
+- Consider floating-point arithmetic limitations
+- Test edge cases and boundary conditions
+
+## Development Workflow
+
+### Before Committing
+- Ensure all tests pass: `npm test`
+- Check for linting errors: `npm run lint`
+- Verify calculations with different salary ranges and frequencies
+
+### Testing Strategy
+- Unit tests for individual calculation functions
+- Integration tests for complete NI calculation flows
+- Edge case testing for boundary conditions (PT, UEL thresholds) 

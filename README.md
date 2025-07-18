@@ -43,6 +43,9 @@ npm run build
 - **Shadcn/UI** - Beautiful, accessible components
 - **Framer Motion** - Smooth animations
 
+- ES Modules: "type": "module" in package.json
+- ES6+ imports: import statements throughout our code
+
 ## 📊 How It Works
 
 The application calculates National Insurance using the 2025/26 thresholds:
