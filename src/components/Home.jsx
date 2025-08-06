@@ -49,7 +49,7 @@ const tools = [
 
 export default function Home() {
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 space-y-8">
+        <div className="min-h-screen bg-gray-50 text-foreground p-6 space-y-8">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -82,7 +82,7 @@ export default function Home() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.1 * index }}
                             >
-                                <Card className={`h-full transition-all duration-200 ${tool.available
+                                <Card className={`h-full transition-all duration-200 bg-white/70 ${tool.available
                                     ? 'hover:shadow-lg hover:scale-[1.02] cursor-pointer'
                                     : 'opacity-60 cursor-not-allowed'
                                     }`}>
