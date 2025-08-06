@@ -16,7 +16,7 @@ export default function TaxCodeCalculator() {
             >
                 Tax Code Explorer
                 <span className="block text-lg font-normal text-muted-foreground mt-2">
-                    Understanding UK Tax Codes and Their Effects on Your Allowance
+                    Build and understand UK Tax Codes and Their Effects on Your Allowance
                 </span>
             </motion.h1>
 

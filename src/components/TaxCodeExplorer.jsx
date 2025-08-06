@@ -192,10 +192,6 @@ export default function TaxCodeExplorer() {
             <CardContent className="p-6 space-y-8">
                 {/* Simplified Header */}
                 <div className="text-center space-y-2">
-                    <h3 className="text-xl font-semibold text-gray-900">Tax Code Explorer</h3>
-                    <p className="text-gray-600 max-w-md mx-auto">
-                        Build and understand how different tax codes affect your allowance
-                    </p>
                     <div className="flex justify-center">
                         <a
                             href="https://www.gov.uk/tax-codes"
@@ -297,7 +293,7 @@ export default function TaxCodeExplorer() {
                             />
                         </button>
                         <span className="text-sm text-gray-600">
-                            {nonCumulative ? 'Non-cumulative (/X)' : 'Cumulative'}
+                            {nonCumulative ? 'Non-cumulative (X, Week1/Month1)' : 'Cumulative'}
                         </span>
                     </div>
                 </div>
