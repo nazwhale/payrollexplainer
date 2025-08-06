@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { HelpCircle, ExternalLink, Calculator, AlertTriangle, Info, CheckCircle } from "lucide-react";
+import { HelpCircle, ExternalLink, Calculator, AlertTriangle, Info, CheckCircle, Share2, Copy } from "lucide-react";
 import { PERSONAL_ALLOWANCE } from "@/lib/income-tax-calculations";
 
 const fmtGBP = (n) => {
@@ -13,6 +13,29 @@ const fmtGBP = (n) => {
         maximumFractionDigits: 2,
     }).format(n);
     return formatted.replace(/\.00$/, '');
+};
+
+// Helper functions for URL parameter management
+const getUrlParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        number: params.get('number') || '1257',
+        prefix: params.get('prefix') || '',
+        suffix: params.get('suffix') || 'L',
+        nonCumulative: params.get('nonCumulative') === 'true'
+    };
+};
+
+const updateUrlParams = (number, prefix, suffix, nonCumulative) => {
+    const params = new URLSearchParams();
+
+    if (number) params.set('number', number);
+    if (prefix) params.set('prefix', prefix);
+    if (suffix) params.set('suffix', suffix);
+    if (nonCumulative) params.set('nonCumulative', 'true');
+
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState(null, '', newUrl);
 };
 
 // Tax code definitions and behavior
@@ -159,11 +182,44 @@ const getCodeExplanation = (number, prefix, suffix, nonCumulative) => {
 };
 
 export default function TaxCodeExplorer() {
-    const [number, setNumber] = useState('1257');
-    const [prefix, setPrefix] = useState('');
-    const [suffix, setSuffix] = useState('L');
-    const [nonCumulative, setNonCumulative] = useState(false);
+    // Initialize state from URL parameters
+    const urlParams = getUrlParams();
+    const [number, setNumber] = useState(urlParams.number);
+    const [prefix, setPrefix] = useState(urlParams.prefix);
+    const [suffix, setSuffix] = useState(urlParams.suffix);
+    const [nonCumulative, setNonCumulative] = useState(urlParams.nonCumulative);
     const [showHelp, setShowHelp] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    // Copy URL to clipboard function
+    const copyUrl = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy URL:', err);
+        }
+    };
+
+    // Update URL parameters when state changes
+    useEffect(() => {
+        updateUrlParams(number, prefix, suffix, nonCumulative);
+    }, [number, prefix, suffix, nonCumulative]);
+
+    // Handle browser navigation (back/forward buttons)
+    useEffect(() => {
+        const handlePopState = () => {
+            const urlParams = getUrlParams();
+            setNumber(urlParams.number);
+            setPrefix(urlParams.prefix);
+            setSuffix(urlParams.suffix);
+            setNonCumulative(urlParams.nonCumulative);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
 
     const codeInfo = getCodeExplanation(number, prefix, suffix, nonCumulative);
 
@@ -180,10 +236,15 @@ export default function TaxCodeExplorer() {
         // Parse common code strings
         const match = codeStr.match(/^(K|S|C)?(\d+)?(L|M|N|T|BR|D0|D1|NT)$/);
         if (match) {
-            setPrefix(match[1] || '');
-            setNumber(match[2] || '');
-            setSuffix(match[3] || '');
-            setNonCumulative(false);
+            const newPrefix = match[1] || '';
+            const newNumber = match[2] || '';
+            const newSuffix = match[3] || '';
+            const newNonCumulative = false;
+
+            setPrefix(newPrefix);
+            setNumber(newNumber);
+            setSuffix(newSuffix);
+            setNonCumulative(newNonCumulative);
         }
     };
 
@@ -311,9 +372,29 @@ export default function TaxCodeExplorer() {
                                 </span>
                             )}
                         </div>
-                        {codeInfo.isValid && (
-                            <CheckCircle className="h-6 w-6 text-green-600" />
-                        )}
+                        <div className="flex items-center space-x-2">
+                            {codeInfo.isValid && (
+                                <CheckCircle className="h-6 w-6 text-green-600" />
+                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={copyUrl}
+                                className="flex items-center space-x-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                            >
+                                {copied ? (
+                                    <>
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span>Copied!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Share2 className="h-4 w-4" />
+                                        <span>Share</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="space-y-3">
