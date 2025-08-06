@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Calculator, Users, FileText, TrendingUp } from "lucide-react";
+import { Calculator, Users, FileText, TrendingUp, Code } from "lucide-react";
 
 const tools = [
     {
@@ -26,14 +26,14 @@ const tools = [
         available: true,
     },
     {
-        id: "paye-calculator",
-        title: "PAYE Calculator",
-        description: "Calculate income tax and National Insurance for employees. Includes all current rates and thresholds for 2025/26.",
-        path: "/paye-calculator",
-        icon: Users,
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-        available: false,
+        id: "tax-code-explorer",
+        title: "Tax Code Explorer",
+        description: "Interactive tool to understand UK tax codes. Build different tax codes and see how they affect your tax-free allowance and monthly deductions.",
+        path: "/tax-code-explorer",
+        icon: Code,
+        color: "text-indigo-600",
+        bgColor: "bg-indigo-50",
+        available: true,
     },
     {
         id: "pension-contributions",
@@ -43,16 +43,6 @@ const tools = [
         icon: TrendingUp,
         color: "text-purple-600",
         bgColor: "bg-purple-50",
-        available: false,
-    },
-    {
-        id: "p11d-benefits",
-        title: "P11D Benefits Calculator",
-        description: "Calculate benefit-in-kind values for company cars, medical insurance, and other taxable benefits.",
-        path: "/p11d-benefits",
-        icon: FileText,
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
         available: false,
     },
 ];
