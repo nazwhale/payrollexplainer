@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import { Bar, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,6 +13,7 @@ import {
 } from "chart.js";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { motion } from "framer-motion";
 import { Check, Copy } from "lucide-react";
 import {
@@ -21,6 +23,8 @@ import {
   calcDirectorStandardNICRates,
   cumulative,
 } from "@/lib/ni-calculations";
+import Home from "@/components/Home";
+import IncomeTaxCalculator from "@/components/IncomeTaxCalculator";
 
 // Explicitly register only the pieces we need – fixes the "linear is not a registered scale" error
 ChartJS.register(
@@ -45,7 +49,7 @@ const fmtGBP = (n) => {
   return formatted.replace(/\.00$/, '');
 };
 
-export default function DirectorsNIApp() {
+function DirectorsNIApp() {
   const [salary, setSalary] = useState(60_000);
   const [frequency, setFrequency] = useState("monthly");
   const [startDate, setStartDate] = useState("2025-04-01");
@@ -149,7 +153,10 @@ export default function DirectorsNIApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 space-y-8">
+    <div className="min-h-screen bg-gray-50 text-foreground p-6 space-y-8">
+      {/* Back button */}
+      <BackButton text="Back to tools" />
+
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -159,7 +166,7 @@ export default function DirectorsNIApp() {
       </motion.h1>
 
       {/* Controls */}
-      <Card>
+      <Card className="bg-white shadow-sm border-0">
         <CardContent className="p-6 grid gap-4 md:grid-cols-3">
           {/* Salary slider */}
           <div>
@@ -218,7 +225,7 @@ export default function DirectorsNIApp() {
       ) : (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-6 md:grid-cols-2">
           {/* Per-pay-run NI bar chart */}
-          <Card>
+          <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Per-pay-run NI</h3>
               <div className="h-64">
@@ -291,7 +298,7 @@ export default function DirectorsNIApp() {
           </Card>
 
           {/* Cumulative NI line chart */}
-          <Card>
+          <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Cumulative NI</h3>
               <div className="h-64">
@@ -366,7 +373,7 @@ export default function DirectorsNIApp() {
       )}
 
       {/* Summary and explanation */}
-      <Card>
+      <Card className="bg-white shadow-sm border-0">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-4">
@@ -385,7 +392,7 @@ export default function DirectorsNIApp() {
                   </p>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-lg">
+              <div className="bg-blue-50 p-4 rounded-lg border-0 shadow-sm">
                 <p className="text-sm">
                   <strong>Key insight:</strong> Total NI over the year is identical whichever method you pick – HMRC only cares about the annual figure – but cash-flow differs.
                   That's why founders on low regular salaries often prefer the alternative method: smaller, predictable deductions help personal budgeting.
@@ -422,5 +429,21 @@ export default function DirectorsNIApp() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main App component with routing
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/directors-national-insurance" element={<DirectorsNIApp />} />
+      <Route path="/income-tax-calculator" element={<IncomeTaxCalculator />} />
+      {/* Add more routes here as needed, for example:
+      <Route path="/paye-calculator" element={<PayeCalculator />} />
+      <Route path="/pension-contributions" element={<PensionContributions />} />
+      <Route path="/p11d-benefits" element={<P11dBenefits />} />
+      */}
+    </Routes>
   );
 }
