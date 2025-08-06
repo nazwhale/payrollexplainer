@@ -38,12 +38,12 @@ const tools = [
     {
         id: "pension-contributions",
         title: "Pension Contributions",
-        description: "Calculate auto-enrollment pension contributions for employers and employees with various salary sacrifice scenarios.",
+        description: "Compare net pay, relief at source, and salary sacrifice methods. Understand the difference in cost and benefits for employees and employers.",
         path: "/pension-contributions",
         icon: TrendingUp,
         color: "text-purple-600",
         bgColor: "bg-purple-50",
-        available: false,
+        available: true,
     },
 ];
 

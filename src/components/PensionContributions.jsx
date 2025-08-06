@@ -1,0 +1,530 @@
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
+import { motion } from "framer-motion";
+import { Calculator, Copy, Check, Banknote, TrendingUp, Shield, PiggyBank, Building2, Users, Receipt } from "lucide-react";
+
+const fmtGBP = (n) => {
+    const formatted = new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(n);
+    return formatted.replace(/\.00$/, '');
+};
+
+export default function PensionContributions() {
+    const [salary, setSalary] = useState(30000);
+    const [employeeContributionRate, setEmployeeContributionRate] = useState(5); // 5% default
+    const [useQualifyingEarnings, setUseQualifyingEarnings] = useState(true); // Default to qualifying earnings
+    const [copyFeedback, setCopyFeedback] = useState(false);
+
+    // Auto-enrollment thresholds 2025/26
+    const QUALIFYING_EARNINGS_LOWER = 6240;
+    const QUALIFYING_EARNINGS_UPPER = 50270;
+
+    // Calculate qualifying earnings for auto-enrollment
+    const qualifyingEarnings = Math.min(Math.max(salary - QUALIFYING_EARNINGS_LOWER, 0), QUALIFYING_EARNINGS_UPPER - QUALIFYING_EARNINGS_LOWER);
+
+    // Employer contribution is always 3% of qualifying earnings for auto-enrollment
+    const employerContribution = (qualifyingEarnings * 3) / 100;
+
+    // Employee contribution - calculate on qualifying earnings or full salary
+    const employeeContributionBase = useQualifyingEarnings ? qualifyingEarnings + QUALIFYING_EARNINGS_LOWER : salary;
+    const employeeGrossContribution = (employeeContributionBase * employeeContributionRate) / 100;
+    const monthlyEmployeeContribution = employeeGrossContribution / 12;
+    const monthlyEmployerContribution = employerContribution / 12;
+    const totalMonthlyContribution = monthlyEmployeeContribution + monthlyEmployerContribution;
+
+    // Net Pay Arrangement
+    const netPayTaxSaving = employeeGrossContribution * 0.20; // Basic rate tax relief
+    const netPayNISaving = employeeGrossContribution * 0.12; // Employee NI saving
+    const netPayEmployerNISaving = employeeGrossContribution * 0.138; // Employer NI saving on employee contribution
+    const netPayTotalSaving = netPayTaxSaving + netPayNISaving;
+    const netPayActualCost = employeeGrossContribution - netPayTotalSaving;
+
+    // Relief at Source (like NEST)
+    const reliefAtSourceNetContribution = employeeGrossContribution * 0.8; // Pay 80%, get 20% back
+    const reliefAtSourceTaxRelief = employeeGrossContribution * 0.20;
+    const reliefAtSourceActualCost = reliefAtSourceNetContribution; // No NI relief
+
+    // Salary Sacrifice
+    const salaryAfterSacrifice = salary - employeeGrossContribution;
+    const salSacTaxSaving = employeeGrossContribution * 0.20;
+    const salSacEmployeeNISaving = employeeGrossContribution * 0.12;
+    const salSacEmployerNISaving = employeeGrossContribution * 0.138; // Employer saves on their NI too
+    const salSacTotalEmployeeSaving = salSacTaxSaving + salSacEmployeeNISaving;
+    const salSacActualCost = employeeGrossContribution - salSacTotalEmployeeSaving;
+
+    // Copy explanation to clipboard
+    const copyExplanation = () => {
+        const explanation = `Pension Contribution Methods Comparison:
+
+Salary: ${fmtGBP(salary)}
+Employee Contribution Rate: ${employeeContributionRate}%
+Employee Contribution Base: ${useQualifyingEarnings ? `Qualifying earnings (${fmtGBP(employeeContributionBase)})` : `Full salary (${fmtGBP(employeeContributionBase)})`}
+Employee Annual Contribution: ${fmtGBP(employeeGrossContribution)}
+Employer Contribution (3% of qualifying earnings): ${fmtGBP(employerContribution)}
+Total Annual Contribution: ${fmtGBP(employeeGrossContribution + employerContribution)}
+
+1. NET PAY ARRANGEMENT (Most Common)
+   ✓ Deducted before tax and NI
+   ✓ Employee cost: ${fmtGBP(netPayActualCost)} (saves ${fmtGBP(netPayTotalSaving)})
+   ✓ Employer contributes: ${fmtGBP(employerContribution)} and saves ${fmtGBP(netPayEmployerNISaving)} in employer NI
+
+2. RELIEF AT SOURCE (e.g. NEST)
+   ✓ Deducted after tax/NI, government adds 20% basic rate relief
+   ✓ Employee cost: ${fmtGBP(reliefAtSourceActualCost)} (saves ${fmtGBP(reliefAtSourceTaxRelief)})
+   ✓ Employer contributes: ${fmtGBP(employerContribution)}
+   ✗ No NI relief for employee or employer
+
+3. SALARY SACRIFICE
+   ✓ Reduce salary, employer contributes the difference
+   ✓ Employee cost: ${fmtGBP(salSacActualCost)} (saves ${fmtGBP(salSacTotalEmployeeSaving)})
+   ✓ Employer contributes: ${fmtGBP(employerContribution)} and saves ${fmtGBP(salSacEmployerNISaving)} in employer NI
+
+KEY INSIGHT: Net Pay and Salary Sacrifice are identical for the employee, but Salary Sacrifice saves the employer money too. NEST typically uses Relief at Source.
+
+Generated by UK Payroll Explainer`;
+
+        navigator.clipboard.writeText(explanation).then(() => {
+            setCopyFeedback(true);
+            setTimeout(() => setCopyFeedback(false), 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 text-foreground p-6 space-y-8">
+            {/* Header with back button */}
+            <BackButton />
+
+            <motion.h1
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-3xl font-bold text-center"
+            >
+                Pension Contributions
+                <span className="block text-lg font-normal text-muted-foreground mt-2">
+                    Net Pay vs Relief at Source vs Salary Sacrifice
+                </span>
+            </motion.h1>
+
+            {/* Controls */}
+            <Card className="bg-white shadow-sm border-0">
+                <CardContent className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                            <label className="block text-sm font-medium text-foreground">
+                                Annual Salary: <span className="font-semibold text-blue-600">{fmtGBP(salary)}</span>
+                            </label>
+                            <div className="space-y-3">
+                                <input
+                                    type="range"
+                                    min="20000"
+                                    max="80000"
+                                    step="1000"
+                                    value={salary}
+                                    onChange={(e) => setSalary(parseInt(e.target.value))}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 
+                                             [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                                             [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:hover:bg-blue-700"
+                                />
+                                <div className="relative text-xs text-muted-foreground" style={{ height: '1.25rem', paddingTop: '0.25rem' }}>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '0%' }}>£20k</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '33.33%' }}>£40k</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '66.67%' }}>£60k</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '100%' }}>£80k</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="block text-sm font-medium text-foreground">
+                                Employee Contribution Rate: <span className="font-semibold text-blue-600">{employeeContributionRate}%</span>
+                            </label>
+                            <div className="space-y-3">
+                                <input
+                                    type="range"
+                                    min="3"
+                                    max="15"
+                                    step="0.5"
+                                    value={employeeContributionRate}
+                                    onChange={(e) => setEmployeeContributionRate(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 
+                                             [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:cursor-pointer
+                                             [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:hover:bg-blue-700"
+                                />
+                                <div className="relative text-xs text-muted-foreground" style={{ height: '1.25rem', paddingTop: '0.25rem' }}>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '0%' }}>3%</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '33.33%' }}>7%</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '66.67%' }}>11%</span>
+                                    <span className="absolute transform -translate-x-1/2" style={{ left: '100%' }}>15%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Qualifying Earnings Checkbox */}
+                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                        <input
+                            type="checkbox"
+                            id="useQualifyingEarnings"
+                            checked={useQualifyingEarnings}
+                            onChange={(e) => setUseQualifyingEarnings(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                        />
+                        <label htmlFor="useQualifyingEarnings" className="text-sm font-medium">
+                            Calculate employee contribution on qualifying earnings only
+                        </label>
+                        <div className="text-xs text-muted-foreground">
+                            {useQualifyingEarnings ?
+                                `(£${QUALIFYING_EARNINGS_LOWER.toLocaleString()} - £${(qualifyingEarnings + QUALIFYING_EARNINGS_LOWER).toLocaleString()})` :
+                                `(Full salary: £${salary.toLocaleString()})`
+                            }
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-3">
+                            <Calculator className="h-5 w-5 text-blue-600" />
+                            <span className="font-medium">Contribution Breakdown</span>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span className="text-muted-foreground">Employee Annual:</span>
+                                <span className="font-semibold ml-2 block">{fmtGBP(employeeGrossContribution)}</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Employer Annual:</span>
+                                <span className="font-semibold ml-2 block">{fmtGBP(employerContribution)}</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Employee Monthly:</span>
+                                <span className="font-semibold ml-2 block">{fmtGBP(monthlyEmployeeContribution)}</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Total Monthly:</span>
+                                <span className="font-semibold ml-2 block">{fmtGBP(totalMonthlyContribution)}</span>
+                            </div>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                            *Employer contribution: 3% of qualifying earnings (£{qualifyingEarnings.toLocaleString()})
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Comparison Cards */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                {/* Net Pay Arrangement */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <Card className="bg-white shadow-sm border-0 h-full">
+                        <CardContent className="p-6">
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="p-3 rounded-lg bg-green-50">
+                                    <Building2 className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Net Pay</h3>
+                                    <p className="text-sm text-muted-foreground">Most common method</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Employee contribution:</span>
+                                    <span className="font-medium">{fmtGBP(employeeGrossContribution)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Employer contribution:</span>
+                                    <span className="font-medium">{fmtGBP(employerContribution)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm">Tax relief (20%):</span>
+                                    <span className="font-medium">-{fmtGBP(netPayTaxSaving)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm">NI relief (12%):</span>
+                                    <span className="font-medium">-{fmtGBP(netPayNISaving)}</span>
+                                </div>
+                                <hr className="border-gray-200" />
+                                <div className="flex justify-between font-semibold">
+                                    <span>Your actual cost:</span>
+                                    <span className="text-blue-600">{fmtGBP(netPayActualCost)}</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
+                                <strong>How it works:</strong> Deducted from gross pay before tax and NI calculations.
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {/* Relief at Source */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <Card className="bg-white shadow-sm border-0 h-full">
+                        <CardContent className="p-6">
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="p-3 rounded-lg bg-orange-50">
+                                    <Receipt className="h-6 w-6 text-orange-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Relief at Source</h3>
+                                    <p className="text-sm text-muted-foreground">NEST, personal pensions</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-sm">You pay (80%):</span>
+                                    <span className="font-medium">{fmtGBP(reliefAtSourceNetContribution)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Employer contribution:</span>
+                                    <span className="font-medium">{fmtGBP(employerContribution)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm">Gov adds (20%):</span>
+                                    <span className="font-medium">+{fmtGBP(reliefAtSourceTaxRelief)}</span>
+                                </div>
+                                <div className="flex justify-between text-red-600">
+                                    <span className="text-sm">NI relief:</span>
+                                    <span className="font-medium">£0</span>
+                                </div>
+                                <hr className="border-gray-200" />
+                                <div className="flex justify-between font-semibold">
+                                    <span>Your actual cost:</span>
+                                    <span className="text-blue-600">{fmtGBP(reliefAtSourceActualCost)}</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
+                                <strong>How it works:</strong> You pay 80%, government automatically adds 20% basic rate relief. Used by NEST and most personal pensions.
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {/* Salary Sacrifice */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    <Card className="bg-white shadow-sm border-0 h-full">
+                        <CardContent className="p-6">
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="p-3 rounded-lg bg-purple-50">
+                                    <PiggyBank className="h-6 w-6 text-purple-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold">Salary Sacrifice</h3>
+                                    <p className="text-sm text-muted-foreground">Best for both parties</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Salary reduction:</span>
+                                    <span className="font-medium">{fmtGBP(employeeGrossContribution)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Employer contribution:</span>
+                                    <span className="font-medium">{fmtGBP(employerContribution)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm">Tax saving (20%):</span>
+                                    <span className="font-medium">-{fmtGBP(salSacTaxSaving)}</span>
+                                </div>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm">NI saving (12%):</span>
+                                    <span className="font-medium">-{fmtGBP(salSacEmployeeNISaving)}</span>
+                                </div>
+                                <hr className="border-gray-200" />
+                                <div className="flex justify-between font-semibold">
+                                    <span>Your actual cost:</span>
+                                    <span className="text-blue-600">{fmtGBP(salSacActualCost)}</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
+                                <strong>How it works:</strong> Reduce salary, employer contributes the difference to your pension.
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </div>
+
+            {/* Key Differences Explanation */}
+            <Card className="bg-white shadow-sm border-0">
+                <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-6">
+                        <h3 className="text-lg font-semibold">Key Differences</h3>
+                        <Button onClick={copyExplanation} size="sm" variant="outline">
+                            {copyFeedback ? (
+                                <>
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Copied!
+                                </>
+                            ) : (
+                                <>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Comparison
+                                </>
+                            )}
+                        </Button>
+                    </div>
+
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <div className="space-y-4">
+                            <h4 className="font-medium flex items-center space-x-2">
+                                <Users className="h-5 w-5 text-blue-600" />
+                                <span>For Employees</span>
+                            </h4>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Net Pay & Salary Sacrifice:</strong> Identical cost to you ({fmtGBP(netPayActualCost)}),
+                                        both provide full tax and NI relief
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Relief at Source:</strong> More expensive ({fmtGBP(reliefAtSourceActualCost)}),
+                                        no National Insurance relief
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Choice:</strong> If your employer offers salary sacrifice, it's usually the best option
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="font-medium flex items-center space-x-2">
+                                <Building2 className="h-5 w-5 text-purple-600" />
+                                <span>For Employers</span>
+                            </h4>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Salary Sacrifice:</strong> Saves employer NI ({fmtGBP(salSacEmployerNISaving)}),
+                                        making it attractive to offer
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Net Pay:</strong> Some admin cost, but no direct financial benefit to employer
+                                    </div>
+                                </div>
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                                    <div>
+                                        <strong>Relief at Source:</strong> No involvement or savings for employer
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <h5 className="font-medium text-blue-800 mb-2">💡 Key Insight</h5>
+                        <p className="text-sm text-blue-700">
+                            <strong>Salary sacrifice is a win-win:</strong> Employees get the same benefit as net pay arrangements,
+                            but employers save on National Insurance contributions. This is why many employers are happy to
+                            offer salary sacrifice schemes - it costs them less while providing the same value to employees.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Auto-Enrollment Information */}
+            <Card className="bg-white shadow-sm border-0">
+                <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+                        <Shield className="h-5 w-5" />
+                        <span>Auto-Enrollment Basics</span>
+                    </h3>
+
+                    <div className="grid gap-4 lg:grid-cols-3">
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-green-600">Minimum Contributions</h4>
+                            <div className="text-sm space-y-1">
+                                <div>Employee: 5% of qualifying earnings</div>
+                                <div>Employer: 3% of qualifying earnings</div>
+                                <div className="text-muted-foreground">(Total: 8%)</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Employee can contribute more, employer minimum is always 3%.
+                                    {useQualifyingEarnings ?
+                                        " Using qualifying earnings calculation above." :
+                                        " Toggle checkbox to see auto-enrollment minimums."
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-blue-600">Qualifying Earnings</h4>
+                            <div className="text-sm space-y-1">
+                                <div>Lower limit: £6,240</div>
+                                <div>Upper limit: £50,270</div>
+                                <div className="text-muted-foreground">(2025/26 rates)</div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-purple-600">Who's Eligible</h4>
+                            <div className="text-sm space-y-1">
+                                <div>Age 22 to State Pension age</div>
+                                <div>Earn over £10,000 per year</div>
+                                <div className="text-muted-foreground">Work in the UK</div>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Info footer */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="text-center text-sm text-muted-foreground mt-12"
+            >
+                <p>
+                    Based on 2025/26 tax year rates and thresholds •
+                    <a
+                        href="https://www.gov.uk/workplace-pensions"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-foreground ml-1"
+                    >
+                        Official HMRC guidance
+                    </a>
+                </p>
+            </motion.div>
+        </div>
+    );
+} 

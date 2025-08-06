@@ -26,6 +26,7 @@ import {
 import Home from "@/components/Home";
 import IncomeTaxCalculator from "@/components/IncomeTaxCalculator";
 import TaxCodeCalculator from "@/components/TaxCodeCalculator";
+import PensionContributions from "@/components/PensionContributions";
 
 // Explicitly register only the pieces we need – fixes the "linear is not a registered scale" error
 ChartJS.register(
@@ -441,9 +442,9 @@ export default function App() {
       <Route path="/directors-national-insurance" element={<DirectorsNIApp />} />
       <Route path="/income-tax-calculator" element={<IncomeTaxCalculator />} />
       <Route path="/tax-code-explorer" element={<TaxCodeCalculator />} />
+      <Route path="/pension-contributions" element={<PensionContributions />} />
       {/* Add more routes here as needed, for example:
       <Route path="/paye-calculator" element={<PayeCalculator />} />
-      <Route path="/pension-contributions" element={<PensionContributions />} />
       <Route path="/p11d-benefits" element={<P11dBenefits />} />
       */}
     </Routes>
